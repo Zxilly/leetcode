@@ -7,29 +7,29 @@ struct TreeNode {
   int val;
   TreeNode *left = nullptr;
   TreeNode *right = nullptr;
+  TreeNode() : val(0), left(nullptr), right(nullptr) {}
+  TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+  TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+  ~TreeNode() {
+    delete left;
+    delete right;
+  }
 };
 struct ListNode {
   int val;
   ListNode *next = nullptr;
-
-  ListNode() = default;
-  ListNode(int x) : val(x) {}
+  ListNode() : val(0), next(nullptr) {}
+  ListNode(int x) : val(x), next(nullptr) {}
   ListNode(int x, ListNode *next) : val(x), next(next) {}
   ~ListNode() {
     delete next;
   }
 };
 
-template <typename = void>
-inline constexpr bool always_false = false;
-template <typename T, template <typename...> typename U>
-struct is_specialization : std::false_type {};
-template <template <typename...> typename U, typename... Args>
-struct is_specialization<U<Args...>, U> : std::true_type {};
-template <typename T, template <auto...> typename U>
-struct is_specialization2 : std::false_type {};
-template <template <auto...> typename U, auto... Args>
-struct is_specialization2<U<Args...>, U> : std::true_type {};
+template <typename T>
+struct is_bitset : std::false_type {};
+template <std::size_t N>
+struct is_bitset<bitset<N>> : std::true_type {};
 template <typename T>
 concept tuple_like = requires { typename tuple_size<T>::type; };
 template <typename T>
@@ -38,11 +38,14 @@ concept iterable = requires(T t) {
   t.end();
 };
 
+template <typename>
+static constexpr bool always_false = false;
+
 template <typename T>
 void print_impl(FILE *f, const T &val, bool write_newline) {
   if constexpr (same_as<T, char>)
-    fprintf(f, "%c", val);
-  if constexpr (same_as<T, int>)
+    fprintf(f, "\"%c\"", val);
+  else if constexpr (same_as<T, int>)
     fprintf(f, "%d", val);
   else if constexpr (same_as<T, float>)
     fprintf(f, "%.f", val);
@@ -54,11 +57,13 @@ void print_impl(FILE *f, const T &val, bool write_newline) {
     fprintf(f, "%u", val);
   else if constexpr (same_as<T, unsigned long long>)
     fprintf(f, "%llu", val);
+  else if constexpr (same_as<T, char *> || same_as<T, const char *>)
+    fprintf(f, "%s", val);
   else if constexpr (same_as<T, bool>)
     fprintf(f, "%s", val ? "true" : "false");
   else if constexpr (same_as<T, string>)
     fprintf(f, "\"%s\"", val.data());
-  else if constexpr (is_specialization2<T, bitset>::value)
+  else if constexpr (is_bitset<T>::value)
     fprintf(f, "\"%s\"", val.to_string().data());
   else if constexpr (same_as<T, TreeNode *>) {
     queue<TreeNode *> q;
@@ -219,23 +224,9 @@ T parse() {
 }
 
 template <typename T>
-void free_var(T &t) {
-  if constexpr (same_as<T, ListNode *>) {
-    auto cur = t;
-    while (cur) {
-      auto next = cur->next;
-      delete cur;
-      cur = next;
-    }
-  } else if constexpr (same_as<T, TreeNode *>) {
-    auto f = [&](auto &self, TreeNode *cur) {
-      if (!cur)
-        return;
-      self(self, cur->left);
-      self(self, cur->right);
-      delete cur;
-    };
-    f(f, t);
+void delete_graph_var(T &t) {
+  if constexpr (same_as<T, ListNode *> || same_as<T, TreeNode *>) {
+    delete t;
   }
 }
 
@@ -259,10 +250,10 @@ void exec(R (Solution::*fn)(Ts...)) {
     } else {
       auto res = apply(fn, args);
       print_impl(stdout, res, true);
-      free_var(res);
+      delete_graph_var(res);
     }
     [&]<size_t... Idx>(index_sequence<Idx...>) {
-      (free_var(get<Idx + 1>(args)), ...);
+      (delete_graph_var(get<Idx + 1>(args)), ...);
     }(index_sequence_for<Ts...>{});
     fprintf(stderr, "\n"); // separate debug output from different testcases
   }
