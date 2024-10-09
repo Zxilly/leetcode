@@ -29,11 +29,12 @@ public:
 
         vector<vector<bool>> vis;
 
-        for(int i = 0; i < m; i++) {
+        for (int i = 0; i < m; i++)
+        {
             vis.push_back(vector<bool>(n, false));
         }
 
-        function<bool(int, pii)> check = [&](int cur, pii pos) -> bool
+        auto check = [&](auto&& check, int cur, pii pos)
         {
             if (pos.first < 0 || pos.first >= m || pos.second < 0 || pos.second >= n)
             {
@@ -57,19 +58,19 @@ public:
             else
             {
                 vis[pos.first][pos.second] = true;
-                if (check(cur + 1, make_pair(pos.first + 1, pos.second)))
+                if (check(check, cur + 1, make_pair(pos.first + 1, pos.second)))
                 {
                     return true;
                 }
-                if (check(cur + 1, make_pair(pos.first - 1, pos.second)))
+                if (check(check, cur + 1, make_pair(pos.first - 1, pos.second)))
                 {
                     return true;
                 }
-                if (check(cur + 1, make_pair(pos.first, pos.second + 1)))
+                if (check(check, cur + 1, make_pair(pos.first, pos.second + 1)))
                 {
                     return true;
                 }
-                if (check(cur + 1, make_pair(pos.first, pos.second - 1)))
+                if (check(check, cur + 1, make_pair(pos.first, pos.second - 1)))
                 {
                     return true;
                 }
@@ -82,7 +83,7 @@ public:
         {
             for (int j = 0; j < n; j++)
             {
-                if (check(0, make_pair(i, j)))
+                if (check(check, 0, make_pair(i, j)))
                 {
                     return true;
                 }
