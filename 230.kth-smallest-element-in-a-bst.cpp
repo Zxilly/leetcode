@@ -27,7 +27,7 @@ using namespace std;
  */
 class Solution {
 public:
-    int k;
+    int x;
     int ans;
 
     void dfs(TreeNode* root) {
@@ -35,8 +35,8 @@ public:
             return;
         }
         dfs(root->left);
-        k--;
-        if (k == 0) {
+        x--;
+        if (x == 0) {
             ans = root->val;
             return;
         }
@@ -44,7 +44,7 @@ public:
     }
 
     int kthSmallest(TreeNode* root, int k) {
-        this->k = k;
+        this->x = k;
         dfs(root);
         return ans;
     }
