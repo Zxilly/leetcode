@@ -7,44 +7,39 @@ using namespace std;
 #endif
 class Solution {
 public:
-    long long lcm(long long a, long long b) {
-        return a * (b / gcd(a, b));
-    }
+    bool hasIncreasingSubarrays(vector<int>& nums, int k) {
+        for(int i = 0; i + k * 2 - 1 < nums.size(); i++) {
+            bool ok = true;
+            for(int j = i; j < i + k - 1; j++) {
+                if (nums[j + 1] <= nums[j]) {
+                    ok = false;
+                    break;
+                }
+            }
 
-    long long ll(const vector<int>& nums) {
-        long long result = nums[0];
-        for (int i = 1; i < nums.size(); ++i) {
-            result = lcm(result, nums[i]);
-        }
-        return result;
-    }
+            if (!ok) continue;
 
-    long long gl(const vector<int>& nums) {
-        long long result = nums[0];
-        for (int i = 1; i < nums.size(); ++i) {
-            result = gcd(result, nums[i]);
-        }
-        return result;
-    }
-
-
-    long long maxScore(vector<int>& nums) {
-        long long ans = gl(nums) * ll(nums);
-
-        for (int i = 0; i < nums.size(); ++i) {
-            vector<int> erased = nums;
-            erased.erase(erased.begin() + i);
-
-            ans = max(ans, gl(erased) * ll(erased));
+            for(int j = i + k; j < i + k * 2 - 1; j++) {
+                if (nums[j + 1] <= nums[j]) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok) return true;
         }
 
-        return ans;
+        return false;
     }
 };
-#ifdef LC_LOCAL
+
 int main()
 {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
+
+    Solution sol;
+    vector<int> nums = {-15, 19};
+    int k = 1;
+    cout << sol.hasIncreasingSubarrays(nums, k) << endl;
 }
-#endif
+

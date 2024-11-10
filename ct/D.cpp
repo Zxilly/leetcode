@@ -7,88 +7,80 @@ using namespace std;
 #endif
 
 using ll = long long;
-
-inline ll c2(ll n)
-{
-    return (n * (n - 1)) / 2;
-}
+const int MOD = 1e9 + 7;
 
 class Solution
 {
 public:
-    vector<int> gcdValues(vector<int> &nums, vector<long long> &queries)
+    int countKReducibleNumbers(string s, int k)
     {
-        int n = nums.size();
-        int max_num = *max_element(nums.begin(), nums.end());
+        int n = s.length();
 
-        int MAX = max_num;
-        vector<long long> freq(MAX + 1, 0);
-        for (auto x : nums)
+        vector<int> cost(n + 1, -1);
+        function<int(int)> get_cost = [&](int x) -> int
         {
-            freq[x]++;
+            if (cost[x] != -1)
+                return cost[x];
+            if (x == 1)
+                return cost[x] = 0;
+            int cnt = __builtin_popcount(x);
+            return cost[x] = 1 + get_cost(cnt);
+        };
+        for (int i = 1; i <= n; ++i)
+        {
+            cost[i] = get_cost(i);
         }
+        cost[0] = INT32_MAX;
 
-        vector<long long> cnt(MAX + 1, 0);
-        for (int g = 1; g <= MAX; g++)
+        vector<vector<vector<vector<int>>>> dp(n + 1, vector<vector<vector<int>>>(n + 1, vector<vector<int>>(2, vector<int>(2, 0))));
+        dp[0][0][1][0] = 1;
+
+        for (int pos = 0; pos < n; ++pos)
         {
-            for (int multiple = g; multiple <= MAX; multiple += g)
+            for (int sum = 0; sum <= n; ++sum)
             {
-                cnt[g] += freq[multiple];
-            }
-        }
-
-        vector<long long> exact(MAX + 1, 0);
-        for (int g = MAX; g >= 1; g--)
-        {
-            exact[g] = c2(cnt[g]);
-            for (int multiple = 2 * g; multiple <= MAX; multiple += g)
-            {
-                exact[g] -= exact[multiple];
-            }
-        }
-
-        vector<pair<int, long long>> gcd_list;
-        for (int g = 1; g <= MAX; g++)
-        {
-            if (exact[g] > 0)
-            {
-                gcd_list.emplace_back(g, exact[g]);
-            }
-        }
-        sort(gcd_list.begin(), gcd_list.end());
-
-        vector<ll> prefixSum;
-        prefixSum.reserve(gcd_list.size());
-        ll current_sum = 0;
-        for (auto &[g, cnt_g] : gcd_list)
-        {
-            current_sum += cnt_g;
-            prefixSum.emplace_back(current_sum);
-        }
-
-        vector<int> answer;
-        for (auto q_idx : queries)
-        {
-            ll target = q_idx + 1;
-            int left = 0, right = prefixSum.size() - 1;
-            int res = -1;
-            while (left <= right)
-            {
-                int mid = left + (right - left) / 2;
-                if (prefixSum[mid] >= target)
+                for (int tight = 0; tight <= 1; ++tight)
                 {
-                    res = mid;
-                    right = mid - 1;
-                }
-                else
-                {
-                    left = mid + 1;
+                    for (int is_num_started = 0; is_num_started <= 1; ++is_num_started)
+                    {
+                        if (dp[pos][sum][tight][is_num_started] == 0)
+                            continue;
+                        int limit = tight ? (s[pos] - '0') : 1;
+                        for (int digit = 0; digit <= limit; ++digit)
+                        {
+                            int other = tight && (digit == limit) ? 1 : 0;
+                            int started = is_num_started;
+                            int new_sum = sum;
+                            if (is_num_started)
+                            {
+                                new_sum += digit;
+                            }
+                            else
+                            {
+                                if (digit == 1)
+                                    started = 1;
+                            }
+
+                            if (new_sum > n)
+                                continue;
+
+                            dp[pos + 1][new_sum][other][started] =
+                                (dp[pos + 1][new_sum][other][started] + dp[pos][sum][tight][is_num_started]) % MOD;
+                        }
+                    }
                 }
             }
-            answer.push_back(res != -1 ? gcd_list[res].first : -1);
         }
 
-        return answer;
+        int ans = 0;
+        for (int sum = 1; sum <= n; ++sum)
+        {
+            if (cost[sum] > k)
+                continue;
+            ans = (ans + dp[n][sum][0][1]) % MOD;
+            ans = (ans + dp[n][sum][1][1]) % MOD;
+        }
+        return ans;
     }
 };
 
@@ -96,9 +88,4 @@ int main()
 {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL);
-
-    Solution sol;
-    // [[1,2],[0,2],[0,1],[3,4]]
-    vector<vector<int>> ins = {{1, 2}, {0, 2}, {0, 1}, {3, 4}};
-    sol.remainingMethods(5, 0, ins);
 }

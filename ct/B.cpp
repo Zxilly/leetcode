@@ -8,97 +8,55 @@ using namespace std;
 
 using ll = long long;
 
-class mint
-{
-    const static ll mod = 1e9 + 7;
-    ll x;
-    void norm()
-    {
-        if (!(-mod <= x && x < mod))
-            x %= mod;
-        if (x < 0)
-            x += mod;
-    }
-
-public:
-    mint() : x(0) {}
-    mint(ll x) : x(x) { norm(); }
-    auto val() const { return x; }
-    friend mint operator^(mint lhs, mint rhs)
-    {
-        mint res = 1;
-        for (; rhs.x; rhs.x >>= 1)
-        {
-            if (rhs.x & 1)
-                res *= lhs;
-            lhs *= lhs;
-        }
-        return res;
-    }
-    mint operator~() { return (*this) ^ (mod - 2); }
-    friend bool operator<(mint lhs, mint rhs) { return lhs.x < rhs.x; }
-    friend bool operator==(mint lhs, mint rhs) { return lhs.x == rhs.x; }
-    friend mint operator+=(mint &lhs, mint rhs) { return lhs = lhs.x + rhs.x; }
-    friend mint operator+(mint lhs, mint rhs) { return lhs += rhs; }
-    friend mint operator-=(mint &lhs, mint rhs) { return lhs = lhs.x - rhs.x; }
-    friend mint operator-(mint lhs, mint rhs) { return lhs -= rhs; }
-    friend mint operator*=(mint &lhs, mint rhs) { return lhs = lhs.x * rhs.x; }
-    friend mint operator*(mint lhs, mint rhs) { return lhs *= rhs; }
-    friend mint operator/=(mint &lhs, mint rhs) { return lhs *= (~rhs); }
-    friend mint operator/(mint lhs, mint rhs) { return lhs /= rhs; }
-    friend istream &operator>>(istream &is, mint &rhs)
-    {
-        is >> rhs.x;
-        rhs.norm();
-        return is;
-    }
-    friend ostream &operator<<(ostream &os, mint rhs) { return os << rhs.x; }
-};
-template <>
-struct std::formatter<mint> : std::formatter<ll>
-{
-    auto format(mint m, format_context &ctx) const
-    {
-        return std::formatter<ll>::format(m.val(), ctx);
-    }
-};
-
 class Solution
 {
 public:
-    // 给你一个字符串 s 和一个整数 t，表示要执行的 转换 次数。每次 转换 需要根据以下规则替换字符串 s 中的每个字符：
-
-    // 如果字符是 'z'，则将其替换为字符串 "ab"。
-    // 否则，将其替换为字母表中的下一个字符。例如，'a' 替换为 'b'，'b' 替换为 'c'，依此类推。
-    // 返回 恰好 执行 t 次转换后得到的字符串的 长度。
-    int lengthAfterTransformations(string s, int t)
+    // 给你一个由 n 个整数组成的数组 nums ，请你找出 k 的 最大值，使得存在 两个 相邻 且长度为 k 的 严格递增 子数组。
+    // 具体来说，需要检查是否存在从下标 a 和 b (a < b) 开始的 两个 子数组，并满足下述全部条件：
+    // 这两个子数组 nums[a..a + k - 1] 和 nums[b..b + k - 1] 都是 严格递增 的。
+    // 这两个子数组必须是 相邻的，即 b = a + k。
+    // 返回 k 的 最大可能 值。
+    // 子数组 是数组中的一个连续 非空 的元素序列。
+    int maxIncreasingSubarrays(vector<int> &nums)
     {
-        vector<mint> dp(26, mint(1));
-
-        for (int i = 1; i <= t; ++i)
+        int n = nums.size();
+        vector<int> incl(n, 1);
+        for (int i = n - 2; i >= 0; i--)
         {
-            vector<mint> dp_curr(26, mint(0));
-            for (int c = 0; c < 26; ++c)
+            if (nums[i] < nums[i + 1])
             {
-                if (c != 25)
+                incl[i] = incl[i + 1] + 1;
+            }
+            else
+            {
+                incl[i] = 1;
+            }
+        }
+
+        int l = 1, r = n / 2, ans = 0;
+        while (l <= r)
+        {
+            int k = l + (r - l) / 2;
+            bool found = false;
+            for (int i = 0; i <= n - 2 * k; i++)
+            {
+                if (incl[i] >= k && incl[i + k] >= k)
                 {
-                    dp_curr[c] += dp[c + 1];
-                }
-                else
-                {
-                    dp_curr[c] += dp[0] + dp[1]; // 'a'和'b'
+                    found = true;
+                    break;
                 }
             }
-            dp = dp_curr;
+            if (found)
+            {
+                ans = k;
+                l = k + 1;
+            }
+            else
+            {
+                r = k - 1;
+            }
         }
-
-        mint result = 0;
-        for (char ch : s)
-        {
-            int c = ch - 'a';
-            result += dp[c];
-        }
-        return result.val();
+        return ans;
     }
 };
 

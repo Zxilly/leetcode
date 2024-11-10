@@ -9,133 +9,103 @@ using namespace std;
 
 using ll = long long;
 
-class mint
+template <typename T>
+class modular
 {
-    const static ll mod = 1e9 + 7;
-    ll x;
-    void norm()
+    static constexpr auto mod() { return T::value; }
+    static constexpr auto norm(integral auto x)
     {
-        if (!(-mod <= x && x < mod))
-            x %= mod;
+        if (!(-mod() <= x && x < mod()))
+            x %= mod();
         if (x < 0)
-            x += mod;
+            x += mod();
+        return x;
     }
+    int x;
 
 public:
-    mint() : x(0) {}
-    mint(ll x) : x(x) { norm(); }
-    auto val() const { return x; }
-    friend mint operator^(mint lhs, mint rhs)
+    modular() : x() {}
+    modular(const auto &x) : x(norm(x)) {}
+    explicit operator auto() const { return x; }
+    auto operator()() const { return x; }
+    auto operator^(integral auto rhs) const
     {
-        mint res = 1;
-        for (; rhs.x; rhs.x >>= 1)
-        {
-            if (rhs.x & 1)
-                res *= lhs;
-            lhs *= lhs;
-        }
+        modular a = *this, res = 1;
+        for (; rhs; rhs >>= 1, a *= a)
+            if (rhs & 1)
+                res *= a;
         return res;
     }
-    mint operator~() { return (*this) ^ (mod - 2); }
-    friend bool operator<(mint lhs, mint rhs) { return lhs.x < rhs.x; }
-    friend bool operator==(mint lhs, mint rhs) { return lhs.x == rhs.x; }
-    friend mint operator+=(mint &lhs, mint rhs) { return lhs = lhs.x + rhs.x; }
-    friend mint operator+(mint lhs, mint rhs) { return lhs += rhs; }
-    friend mint operator-=(mint &lhs, mint rhs) { return lhs = lhs.x - rhs.x; }
-    friend mint operator-(mint lhs, mint rhs) { return lhs -= rhs; }
-    friend mint operator*=(mint &lhs, mint rhs) { return lhs = lhs.x * rhs.x; }
-    friend mint operator*(mint lhs, mint rhs) { return lhs *= rhs; }
-    friend mint operator/=(mint &lhs, mint rhs) { return lhs *= (~rhs); }
-    friend mint operator/(mint lhs, mint rhs) { return lhs /= rhs; }
-    friend istream &operator>>(istream &is, mint &rhs)
+    auto operator~() const { return *this ^ (mod() - 2); }
+    auto operator<=>(const modular &rhs) const = default;
+    auto operator-() const { return modular(-x); }
+    auto &operator+=(const modular &rhs)
+    {
+        if ((x += rhs.x) >= mod())
+            x -= mod();
+        return *this;
+    }
+    auto &operator-=(const modular &rhs)
+    {
+        if ((x -= rhs.x) < 0)
+            x += mod();
+        return *this;
+    }
+    auto &operator*=(const modular &rhs) { return *this = (ll)x * rhs.x; }
+    auto &operator/=(const modular &rhs) { return *this *= (~rhs); }
+    friend auto operator+(modular lhs, const modular &rhs) { return lhs += rhs; }
+    friend auto operator-(modular lhs, const modular &rhs) { return lhs -= rhs; }
+    friend auto operator*(modular lhs, const modular &rhs) { return lhs *= rhs; }
+    friend auto operator/(modular lhs, const modular &rhs) { return lhs /= rhs; }
+    friend auto &operator>>(istream &is, modular &rhs)
     {
         is >> rhs.x;
-        rhs.norm();
+        rhs.x = norm(rhs.x);
         return is;
     }
-    friend ostream &operator<<(ostream &os, mint rhs) { return os << rhs.x; }
+    friend auto &operator<<(ostream &os, const modular &rhs) { return os << rhs.x; }
 };
-template <>
-struct std::formatter<mint> : std::formatter<ll>
+template <typename T>
+struct std::formatter<modular<T>> : formatter<string>
 {
-    auto format(mint m, format_context &ctx) const
+    auto format(const modular<T> &m, format_context &ctx) const
     {
-        return std::formatter<ll>::format(m.val(), ctx);
+        return format_to(ctx.out(), "{}", m());
     }
 };
+
+constexpr int mod = 1e9 + 7;
+using mint = modular<integral_constant<int, mod>>;
 
 class Solution
 {
 public:
-    vector<int> yzs(int n, int mx)
+    // 给你一个整数数组 nums。好子序列 的定义是：子序列中任意 两个 连续元素的绝对差 恰好 为 1。
+    // 子序列 是指可以通过删除某个数组的部分元素（或不删除）得到的数组，并且不改变剩余元素的顺序。
+    // 返回 nums 中所有 可能存在的 好子序列的 元素之和。
+    // 因为答案可能非常大，返回结果需要对 109 + 7 取余。
+    // 注意，长度为 1 的子序列默认为好子序列。
+    int sumOfGoodSubsequences(vector<int> &nums)
     {
-        vector<int> divisors;
-        for (int d = 1; d <= sqrt(n); ++d)
-        {
-            if (n % d == 0)
-            {
-                if (d <= mx)
-                    divisors.emplace_back(d);
-                if (n / d != d && n / d <= mx)
-                    divisors.emplace_back(n / d);
-            }
-        }
-        return divisors;
-    }
-
-    // 给你一个整数数组 nums。
-    // 请你统计所有满足一下条件的 非空 子序列对 (seq1, seq2) 的数量：
-    // 子序列 seq1 和 seq2 不相交，意味着 nums 中 不存在 同时出现在两个序列中的下标。
-    // seq1 元素的 GCD 等于 seq2 元素的 GCD。
-    // 返回满足条件的子序列对的总数。
-    // 由于答案可能非常大，请返回其对 10^9 + 7 取余 的结果。
-    // gcd(a, b) 表示 a 和 b 的 最大公约数。
-    // 子序列 是指可以从另一个数组中删除某些或不删除元素得到的数组，并且删除操作不改变其余元素的顺序。
-    int subsequencePairCount(vector<int> &nums)
-    {
-        int n = nums.size();
-        int mx = *max_element(nums.begin(), nums.end());
-        vector<int> cnt(mx + 1, 0);
-        for (auto&& num : nums)
-        {
-            for (auto&& d : yzs(num, mx))
-            {
-                cnt[d]++;
-            }
-        }
-
-        vector<mint> cntsq(mx + 1, 1);
-        for (int i = 1; i <= mx; ++i)
-        {
-            cntsq[i] = cntsq[i - 1] * 2;
-        }
-
-        vector<mint> f(mx + 1, 0);
-        for (int d = mx; d >= 1; --d)
-        {
-            f[d] = cntsq[cnt[d]] - mint(1);
-            for (int m = 2 * d; m <= mx; m += d)
-            {
-                f[d] = f[d] - f[m];
-            }
-        }
-
-        vector<mint> g(mx + 1, 0);
-        for (int d = mx; d >= 1; --d)
-        {
-            g[d] = f[d] * f[d];
-            for (int m = 2 * d; m <= mx; m += d)
-            {
-                g[d] = g[d] - g[m];
-            }
-        }
-
+        map<int, pair<mint, mint>> dp;
         mint ans = 0;
-        for (int d = 1; d <= mx; ++d)
+
+        for (auto num : nums)
         {
-            ans = ans + g[d];
+            mint c1 = dp.contains(num - 1) ? dp[num - 1].first : 0;
+            mint s1 = dp.contains(num - 1) ? dp[num - 1].second : 0;
+            mint c2 = dp.contains(num + 1) ? dp[num + 1].first : 0;
+            mint s2 = dp.contains(num + 1) ? dp[num + 1].second : 0;
+
+            mint new_count = c1 + c2 + 1;
+            mint new_sum = s1 + s2 + num * (c1 + c2) + num;
+
+            dp[num].first += new_count;
+            dp[num].second += new_sum;
+            ans += new_sum;
         }
-        return ans.val();
+
+        return ans();
     }
 };
 
